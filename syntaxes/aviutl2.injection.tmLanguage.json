@@ -1,0 +1,133 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "AviUtl2 Lua (injection)",
+  "scopeName": "aviutl2.injection",
+  "injectionSelector": "L:source.lua -comment -string",
+  "patterns": [
+    { "include": "#shader-block" },
+    { "include": "#directive-at" },
+    { "include": "#directive-colon" },
+    { "include": "#directive-flag" },
+    { "include": "#section" },
+    { "include": "#ffi-cdef" },
+    { "include": "#obj-variable" },
+    { "include": "#obj-function" },
+    { "include": "#global-function" },
+    { "include": "#global-table" },
+    { "include": "#obj" }
+  ],
+  "repository": {
+    "shader-block": {
+      "begin": "^(--\\[(=*)\\[)(pixelshader|computeshader)(@)([^:\\r\\n]+)(:)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.comment.begin.lua comment.block.lua" },
+        "3": { "name": "keyword.other.directive.aviutl2 aul2.settings.lua" },
+        "4": { "name": "punctuation.separator.aviutl2" },
+        "5": { "name": "entity.name.function.shader.aviutl2" },
+        "6": { "name": "punctuation.separator.aviutl2" }
+      },
+      "end": "\\]\\2\\]",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.comment.end.lua comment.block.lua" }
+      },
+      "contentName": "meta.embedded.block.hlsl source.hlsl",
+      "patterns": [{ "include": "source.hlsl" }]
+    },
+    "directive-at": {
+      "match": "^(--)(track|trackgroup|checksection|check|color|file|folder|font|figure|select|text|string|value|data|hide)(@)([^:\\r\\n]*)(?:(:)(.*))?$",
+      "name": "meta.directive.aviutl2",
+      "captures": {
+        "1": { "name": "keyword.other.directive.aviutl2 aul2.settings.lua" },
+        "2": { "name": "keyword.other.directive.aviutl2 aul2.settings.lua" },
+        "3": { "name": "keyword.other.directive.aviutl2 aul2.settings.lua" },
+        "4": { "patterns": [{ "include": "#directive-variables" }] },
+        "5": { "name": "punctuation.separator.aviutl2" },
+        "6": { "patterns": [{ "include": "#directive-arguments" }] }
+      }
+    },
+    "directive-colon": {
+      "match": "^(--)(group|separator|label|information|script|require|speed|param|track[0-3]|check0|color|file|dialog)(:)(.*)$",
+      "name": "meta.directive.aviutl2",
+      "captures": {
+        "1": { "name": "keyword.other.directive.aviutl2 aul2.settings.lua" },
+        "2": { "name": "keyword.other.directive.aviutl2 aul2.settings.lua" },
+        "3": { "name": "punctuation.separator.aviutl2" },
+        "4": { "patterns": [{ "include": "#directive-arguments" }] }
+      }
+    },
+    "directive-flag": {
+      "match": "^(--)(filter|hidemenu|twopoint|timecontrol|group)\\s*$",
+      "name": "meta.directive.aviutl2",
+      "captures": {
+        "1": { "name": "keyword.other.directive.aviutl2 aul2.settings.lua" },
+        "2": { "name": "keyword.other.directive.aviutl2 aul2.settings.lua" }
+      }
+    },
+    "directive-variables": {
+      "patterns": [
+        { "match": ",", "name": "punctuation.separator.comma.aviutl2" },
+        { "match": "[^,\\s]+", "name": "variable.other.definition.aviutl2" }
+      ]
+    },
+    "directive-arguments": {
+      "patterns": [
+        { "match": ",", "name": "punctuation.separator.comma.aviutl2" },
+        { "match": "==|~=|[=<>/;]", "name": "keyword.operator.aviutl2" },
+        { "match": "(?<![\\w.])0x[0-9a-fA-F]+(?![\\w.])", "name": "constant.numeric.hex.aviutl2 aul2.type.lua" },
+        { "match": "(?<![\\w.])-?\\d+(?:\\.\\d+)?(?![\\w.])", "name": "constant.numeric.aviutl2" },
+        { "match": "(?<![\\w.])(?:true|false|nil)(?![\\w.])", "name": "constant.language.aviutl2" },
+        { "match": "\\{[^}]*\\}", "name": "meta.table.aviutl2 constant.other.aviutl2" },
+        { "match": "\"[^\"]*\"", "name": "string.quoted.double.aviutl2" },
+        { "match": "[^,=<>~/;\\s](?:[^,=<>~/;]*[^,=<>~/;\\s])?", "name": "string.unquoted.aviutl2" }
+      ]
+    },
+    "section": {
+      "match": "^(@)(.+)$",
+      "captures": {
+        "1": { "name": "keyword.control.section.aviutl2 keyword.control.aul2" },
+        "2": { "name": "entity.name.section.aviutl2 markup.heading.aviutl2" }
+      }
+    },
+    "ffi-cdef": {
+      "begin": "(\\.)(cdef)\\s*(\\[(=*)\\[)",
+      "beginCaptures": {
+        "2": { "name": "support.function.aviutl2" },
+        "3": { "name": "punctuation.definition.string.begin.lua" }
+      },
+      "end": "\\]\\4\\]",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.lua" }
+      },
+      "contentName": "meta.embedded.block.c source.c",
+      "patterns": [{ "include": "source.c" }]
+    },
+    "obj-variable": {
+      "match": "\\b(obj)\\s*(\\.)\\s*(ox|oy|oz|rx|ry|rz|cx|cy|cz|sx|sy|sz|zoom|aspect|alpha|x|y|z|w|h|screen_w|screen_h|framerate|frame|time|totalframe|totaltime|layer|index|num|id|effect_id|frame_s|frame_e|effect_layer|originframe|track[0-3])\\b(?!\\s*\\()",
+      "captures": {
+        "1": { "name": "variable.language.obj.aviutl2" },
+        "2": { "name": "punctuation.accessor.aviutl2" },
+        "3": { "name": "variable.other.property.aviutl2 support.variable.property.aviutl2" }
+      }
+    },
+    "obj-function": {
+      "match": "\\b(obj)\\s*(\\.)\\s*(mes|effect|drawpoly|draw|load|setfont|getfont|rand1|rand|setoption|getoption|getvalue|setanchor|getpixeldata|getpixel|putpixeldata|putpixel|copypixel|pixeloption|getaudio|copybuffer|clearbuffer|pixelshader|computeshader|getpoint|getinfo|data|multiobject|module|interpolation)\\b",
+      "captures": {
+        "1": { "name": "variable.language.obj.aviutl2" },
+        "2": { "name": "punctuation.accessor.aviutl2" },
+        "3": { "name": "support.function.aviutl2 entity.name.function.aviutl2" }
+      }
+    },
+    "global-function": {
+      "match": "(?<![.:\\w])(RGB|HSV|OR|AND|XOR|SHIFT|rotation|debug_print|rand1|rand|mes)(?=\\s*\\()",
+      "name": "support.function.aviutl2 entity.name.function.aviutl2"
+    },
+    "global-table": {
+      "match": "(?<![.:\\w])(global)\\b(?=\\s*[.\\[])",
+      "name": "variable.language.global.aviutl2"
+    },
+    "obj": {
+      "match": "(?<![.:\\w])obj\\b",
+      "name": "variable.language.obj.aviutl2"
+    }
+  }
+}

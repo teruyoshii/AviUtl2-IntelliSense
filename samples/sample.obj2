@@ -1,0 +1,45 @@
+@図形を並べる
+--information:サンプル v1.0.0 by teruyoshi | 拡張機能の動作確認用
+--label:サンプル
+--group:配置,true
+--track@num:個数,1,100,5,1
+--track@radius:半径,0,2000,200,0.01
+--trackgroup@num,radius:Layout
+--select@mode:配置=0,円形=0,直線=1
+--group
+--color@col:色,0xff8800
+--figure@fig:図形,円
+--check@glow:発光,false
+--track@bright:明るさ,-100,100,0,0.01
+--hide@bright:glow==0
+--[[pixelshader@psmain:
+cbuffer constant0 : register(b0) {
+    float bright;
+};
+float4 psmain(float4 pos : SV_Position) : SV_Target {
+    return float4(bright, bright, bright, 1);
+}
+]]
+
+obj.load("figure", fig, col, 100)
+obj.multiobject(num, function()
+    local r = 360 * obj.index / obj.num
+    if mode == 0 then
+        obj.ox = math.sin(math.rad(r)) * radius
+        obj.oy = -math.cos(math.rad(r)) * radius
+    else
+        obj.ox = (obj.index - (obj.num - 1) / 2) * radius
+    end
+end)
+if glow then
+    obj.pixelshader("psmain", "object", nil, {bright / 100}, "add")
+end
+print("@info", obj.getinfo("version"), RGB(col))
+global.count = (tonumber(global.count) or 0) + 1
+
+@トラックバー用の関数
+--track@speed:速度,0,100,10
+obj.setoption("blend", "add")
+obj.setoption("drawtarget", "tempbuffer", obj.screen_w, obj.screen_h)
+obj.draw(0, 0, 0, 1, 1)
+local v = obj.getvalue("track.speed", 0, -1)

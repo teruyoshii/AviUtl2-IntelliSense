@@ -1,40 +1,363 @@
 {
-  "name": "aul2-intellisense",
+  "name": "aviutl2-intellisense",
   "displayName": "AviUtl2 IntelliSense",
-  "description": "AviUtl2の設定項目・独自関数を補完し、スクリプトファイル制作を補助します。",
-  "version": "0.2.0",
-  "publisher": "hirokawa-beach",
-  "engines": {
-    "vscode": "^1.80.0"
-  },
+  "description": "AviUtl2のスクリプト(.anm2/.obj2/.cam2/.scn2/.tra2)の構文ハイライト・補完・引数ヒント・ホバー・アウトライン・診断",
+  "version": "2.0.0",
+  "publisher": "teruyoshi",
+  "license": "MIT",
   "repository": {
-  "type": "git",
-  "url": "https://github.com/hirokawa-beach/AviUtl2-IntelliSense.git"
+    "type": "git",
+    "url": "https://github.com/teruyoshii/AviUtl2-IntelliSense.git"
   },
-  "categories": ["Languages"],
-  "activationEvents": ["onLanguage:lua"],
-  "main": "./extension.js",
+  "homepage": "https://github.com/teruyoshii/AviUtl2-IntelliSense#readme",
+  "bugs": {
+    "url": "https://github.com/teruyoshii/AviUtl2-IntelliSense/issues"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "AviUtl2",
+    "AviUtl",
+    "Lua",
+    "anm2",
+    "obj2"
+  ],
+  "activationEvents": [
+    "onLanguage:lua"
+  ],
+  "main": "./src/extension.js",
   "contributes": {
     "languages": [
       {
         "id": "lua",
-        "aliases": ["AviUtl2 Lua", "lua"],
-        "extensions": [".anm2", ".obj2", ".cam2", ".scn2", ".tra2"],
-        "configuration": "./language-configuration.json"
+        "extensions": [
+          ".anm2",
+          ".obj2",
+          ".cam2",
+          ".scn2",
+          ".tra2"
+        ]
       }
     ],
     "grammars": [
       {
-        "language": "lua",
-        "scopeName": "source.lua",
-        "path": "./syntaxes/aul2.tmLanguage.json"
+        "scopeName": "aviutl2.injection",
+        "path": "./syntaxes/aviutl2.injection.tmLanguage.json",
+        "injectTo": [
+          "source.lua"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.hlsl": "hlsl",
+          "meta.embedded.block.c": "c"
+        }
       }
     ],
-    "snippets": [
+    "configuration": {
+      "title": "AviUtl2 IntelliSense",
+      "properties": {
+        "aviutl2.diagnostics.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "指示子のタイプミスや未定義のシェーダー名などを問題パネルに表示します。"
+        },
+        "aviutl2.colorDecorator": {
+          "type": "string",
+          "enum": [
+            "all",
+            "directive",
+            "off"
+          ],
+          "enumDescriptions": [
+            "0xRRGGBB 形式の数値すべてに色見本を表示する",
+            "--color@ / --color: の行のみ色見本を表示する",
+            "色見本を表示しない"
+          ],
+          "default": "all",
+          "description": "0xRRGGBB 形式の色の横に色見本(カラーピッカー)を表示する範囲。"
+        },
+        "aviutl2.completion.luaStandardLibrary": {
+          "type": "boolean",
+          "default": true,
+          "description": "Luaの基本関数(pairs, tostring など)とライブラリ名(math, string, table)を補完候補に含めます。Lua言語サーバーと併用して候補が重複する場合はオフにしてください。"
+        },
+        "aviutl2.tokenColors": {
+          "type": "object",
+          "default": {
+            "directive": "#FF8800",
+            "directiveColor": "#C6A553",
+            "section": "#FF0000",
+            "shaderName": "#9790FE",
+            "obj": "#6484E3",
+            "objVariable": "#A8C4FF",
+            "function": "#82AAFF",
+            "global": "#BE22DD"
+          },
+          "additionalProperties": false,
+          "markdownDescription": "要素毎の文字色(#RRGGBB)。`\"\"`(空文字)を指定した要素と、既定値の無い要素はテーマの色になります。コマンド「AviUtl2: 色をカスタマイズ」から画面で設定できます。値は `editor.tokenColorCustomizations` に自動で反映されます。",
+          "properties": {
+            "directive": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "指示子: --track@speed:速度 の 「--track@」 の部分(既定: #FF8800)"
+            },
+            "directiveVariable": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "指示子の変数名: --track@speed:速度 の 「speed」 の部分"
+            },
+            "directiveText": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "指示子の項目名・文字列: --track@speed:速度 の 「速度」 の部分"
+            },
+            "directiveValue": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "指示子の数値・真偽値: 0,100,true の 「0」「100」「true」 の部分"
+            },
+            "directiveColor": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "指示子の色コード: --color@col:色,0xff8800 の 「0xff8800」 の部分(既定: #C6A553)"
+            },
+            "directivePunctuation": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "指示子の区切り記号: --hide@x:chk==0 の 「:」「==」 の部分"
+            },
+            "section": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "@セクション名: @スクリプト名 の 「@スクリプト名」 の部分(既定: #FF0000)"
+            },
+            "shaderName": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "シェーダー登録名: pixelshader@psmain: の 「psmain」 の部分(既定: #9790FE)"
+            },
+            "obj": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "obj: obj.ox の 「obj」 の部分(既定: #6484E3)"
+            },
+            "objVariable": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "obj変数: obj.ox の 「ox」 の部分(既定: #A8C4FF)"
+            },
+            "function": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "obj関数・独自関数: obj.draw() RGB() の 「draw」「RGB」 の部分(既定: #82AAFF)"
+            },
+            "global": {
+              "type": "string",
+              "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+              "description": "global: global.xxx の 「global」 の部分(既定: #BE22DD)"
+            }
+          }
+        },
+        "aviutl2.tokenFontStyles": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": false,
+          "markdownDescription": "要素毎の文字スタイル。`bold` `italic` `underline` `strikethrough` を空白区切りで指定します。",
+          "properties": {
+            "directive": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "指示子"
+            },
+            "directiveVariable": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "指示子の変数名"
+            },
+            "directiveText": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "指示子の項目名・文字列"
+            },
+            "directiveValue": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "指示子の数値・真偽値"
+            },
+            "directiveColor": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "指示子の色コード"
+            },
+            "directivePunctuation": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "指示子の区切り記号"
+            },
+            "section": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "@セクション名"
+            },
+            "shaderName": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "シェーダー登録名"
+            },
+            "obj": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "obj"
+            },
+            "objVariable": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "obj変数"
+            },
+            "function": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "obj関数・独自関数"
+            },
+            "global": {
+              "type": "string",
+              "pattern": "^((bold|italic|underline|strikethrough)( |$))*$",
+              "description": "global"
+            }
+          }
+        },
+        "aviutl2.groupHighlight.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "--group による設定グループの範囲を、色付きの線と背景で表示します。"
+        },
+        "aviutl2.groupHighlight.showLabels": {
+          "type": "boolean",
+          "default": false,
+          "description": "グループの開始行・終了行に「▼ グループ名」「▲ ここまで」を表示します。"
+        },
+        "aviutl2.groupHighlight.backgroundOpacity": {
+          "type": "number",
+          "default": 0.08,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "グループの背景色の濃さ(0〜1)。0で背景を付けません。"
+        },
+        "aviutl2.groupHighlight.colors": {
+          "type": "array",
+          "default": [
+            "#4FC1FF",
+            "#C586C0",
+            "#DCDCAA",
+            "#4EC9B0",
+            "#F48771",
+            "#B5CEA8"
+          ],
+          "items": {
+            "type": "string",
+            "format": "color-hex"
+          },
+          "minItems": 1,
+          "description": "グループの表示色(#RRGGBB)。グループ毎に順番に使います。"
+        },
+        "aviutl2.sectionHighlight.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "@スクリプト名 から始まる行全体に背景色を付けて、複数スクリプトの区切りを見やすくします。"
+        },
+        "aviutl2.sectionHighlight.color": {
+          "type": "string",
+          "format": "color-hex",
+          "default": "#C586C0",
+          "description": "@スクリプト名 の行の背景色(#RRGGBB)。スクロールバー横の印にもこの色を使います。"
+        },
+        "aviutl2.sectionHighlight.opacity": {
+          "type": "number",
+          "default": 0.25,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "@スクリプト名 の行の背景色の濃さ(0〜1)。"
+        },
+        "aviutl2.shaderHighlight.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "--[[pixelshader@名前: ～ ]] (computeshader も同様)のシェーダー定義の範囲に背景色を付けます。"
+        },
+        "aviutl2.shaderHighlight.color": {
+          "type": "string",
+          "format": "color-hex",
+          "default": "#9790FE",
+          "description": "シェーダー定義の範囲の背景色(#RRGGBB)。"
+        },
+        "aviutl2.shaderHighlight.opacity": {
+          "type": "number",
+          "default": 0.08,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "シェーダー定義の範囲の背景色の濃さ(0〜1)。"
+        },
+        "aviutl2.inlayHints.trackParameters": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "`--track@` / `--track0:` の各値の前に `min:` `max:` `default:` などの項目名を補助表示します(全体のオン/オフ)。項目毎の表示は `aviutl2.inlayHints.track.*`、色は `aviutl2.inlayHints.trackColor` で設定できます。"
+        },
+        "aviutl2.inlayHints.trackColor": {
+          "type": "string",
+          "default": "",
+          "pattern": "^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$",
+          "markdownDescription": "`--track@` の補助表示(`min:` など)の文字色(#RRGGBB)。空欄の場合はテーマのインレイヒントの色になります。"
+        },
+        "aviutl2.inlayHints.track.min": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "`--track@` の最小値の前に `min:` を表示します。"
+        },
+        "aviutl2.inlayHints.track.max": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "`--track@` の最大値の前に `max:` を表示します。"
+        },
+        "aviutl2.inlayHints.track.default": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "`--track@` のデフォルト値の前に `default:` を表示します。"
+        },
+        "aviutl2.inlayHints.track.step": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "`--track@` の移動単位の前に `step:` を表示します。"
+        },
+        "aviutl2.inlayHints.track.zeroLabel": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "`--track@` のゼロ値名称の前に `zeroLabel:` を表示します。"
+        },
+        "aviutl2.inlayHints.track.ratio": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "`--track@` の操作倍率の前に `ratio:` を表示します。"
+        }
+      }
+    },
+    "commands": [
       {
-        "language": "lua",
-        "path": "./snippets/aul2.code-snippets"
+        "command": "aviutl2.customizeColors",
+        "title": "設定",
+        "category": "AviUtl2 IntelliSense"
+      },
+      {
+        "command": "aviutl2.fixFoldingSetting",
+        "title": "折りたたみを妨げている設定(editor.defaultFoldingRangeProvider)を削除",
+        "category": "AviUtl2 IntelliSense"
       }
     ]
+  },
+  "scripts": {
+    "test": "node test/run.js && node test/providers.js && node test/webview.js",
+    "package": "npx --yes @vscode/vsce package --no-dependencies"
   }
 }
