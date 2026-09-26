@@ -1,33 +1,150 @@
 # AviUtl2 IntelliSense
 
 VSCodeでAviUtl2のスクリプト(`.anm2` / `.obj2` / `.cam2` / `.scn2` / `.tra2`)を書くための拡張機能です。
+構文ハイライト・補完・引数ヒント・診断などで、スクリプトの作成を補助します。
+
+![構文ハイライト](images/highlight.png)
 
 [seilor0さんのAviUtl2-IntelliSense-Fork](https://github.com/seilor0/AviUtl2-IntelliSense-Fork)
 (元は[hirokawa-beachさんのAviUtl2-IntelliSense](https://github.com/hirokawa-beach/AviUtl2-IntelliSense))が
 AviUtl2 beta20時点で更新停止していたため、AviUtl2 **ver 2.1.10(lua.txt 2026/9/19版)** の仕様を元に作り直したものです。
 
+## 導入方法
+
+1. [Releases](https://github.com/teruyoshii/AviUtl2-IntelliSense/releases/latest) から `aviutl2-intellisense-x.x.x.vsix` をダウンロードします。
+2. VSCodeの拡張機能メニュー右上の「…」→「VSIXからのインストール」でダウンロードしたファイルを選択します。
+   (コマンドの場合は `code --install-extension aviutl2-intellisense-x.x.x.vsix`)
+
+更新する場合も、新しいvsixで同じ手順を行ってください。
+
+> [!IMPORTANT]
+> AviUtl2 IntelliSense Fork(または元のAviUtl2 IntelliSense)を導入している場合は、先にアンインストールしてください。
+> フォーク版はLua全体の文法を置き換えるため、併用すると色分けが崩れます。
+
 ## 機能
 
-| 機能 | 内容 |
-| --- | --- |
-| 構文ハイライト | 指示子(`--track@` など)・`@セクション`・`obj.xxx`・独自関数・`global` を着色。`--[[pixelshader@...]]` の中はHLSLとして着色 |
-| 補完 | 指示子(スニペット付き) / `obj.` の変数・関数 / `math.` `string.` `table.` / 独自関数 / 指示子で定義した変数 |
-| 引数の候補 | `obj.load("figure", ...)` `obj.setoption("blend", ...)` `obj.getoption(...)` `obj.getinfo(...)` などの文字列引数。第1引数に応じて第2引数の候補が変わります |
-| 文書内の定義からの候補 | `obj.pixelshader("…")` にシェーダー登録名、`obj.data("…")` に `--data@` の登録名、`obj.getvalue("track.…")` にトラックバー変数名 |
-| 引数ヒント | 関数の各引数の説明。`obj.load("text", …)` のように形式ごとのシグネチャを自動で切替。指示子の行でも各項目の説明を表示 |
-| ホバー | 関数・変数・指示子・文字列引数の説明。指示子で定義した変数は項目名・範囲・初期値を表示 |
-| 定義へ移動 | 変数 → `--track@` などの定義行、`"psmain"` → シェーダー定義、`"track.xxx"` → トラックバー定義 |
-| アウトライン | `@セクション` > `--group` > 設定項目 / シェーダー定義 の階層で表示 |
-| 色見本 | `0xRRGGBB` の横に色見本を表示し、カラーピッカーで編集可能 |
-| 設定グループの表示 | `--group` の範囲に色付きの左線と薄い背景を付けます。グループ毎に色が変わります。設定で開始行に「▼ グループ名 N項目」、終了行に「▲ ここまで」も表示できます |
-| @スクリプト名の強調 | `@スクリプト名` の行全体に背景色を付け、スクロールバー横にも印を表示。長いファイルでもスクリプトの区切りが一目で分かります |
-| シェーダー定義の強調 | `--[[pixelshader@` ～ `]]`(computeshader も同様)の範囲に背景色を付けます |
-| `--track@` の補助表示 | `--track@speed:速度,min: 0,max: 100,default: 10,step: 1` のように、各値の前に項目名を小さく表示。項目毎のオン/オフと表示色を設定可能 |
-| 折りたたみ | 設定グループ・`@セクション`・シェーダー定義を折りたたみ可能(インデントによる折りたたみも維持) |
-| 色の個別設定 | コマンド「AviUtl2 IntelliSense: 設定」でカラーピッカー付きの画面を開き、要素毎の色・太字/斜体/下線とグループ表示の色を設定可能 |
-| 診断 | 指示子のタイプミス(`--infomation` など)、トラックバーの引数不足・範囲外の初期値、変数名・項目名の重複、`--trackgroup` / `--hide` の未定義変数、未定義のシェーダー名・`--data` 名、`.tra2` 専用指示子の誤用 など |
+`@` で区切った複数スクリプトのファイルでは、変数・シェーダーの補完や診断はスクリプト(セクション)ごとに扱います。
 
-`@` で区切った複数スクリプトのファイルでは、変数・シェーダーの補完や診断はセクションごとに扱います。
+### 構文ハイライト
+
+指示子(`--track@` など)・`@スクリプト名`・`obj.xxx`・独自関数・`global` などに色を付けます。
+`--[[pixelshader@...]]` の中はHLSLとして色分けします。色は[設定画面](#設定画面)で要素ごとに変更できます(冒頭の画像を参照)。
+
+### 補完
+
+`obj.` の後にobj変数・obj関数の候補を表示します。候補を選ぶと右側に説明が表示されます。
+
+![obj. の補完](images/complete-obj.png)
+
+行頭で `--` と入力すると指示子の候補を表示します。選ぶと `--track@変数名:項目名,最小値,最大値,デフォルト値` のような雛形が入力されます。
+
+![指示子の補完](images/complete-directive.png)
+
+このほか、`math.` `string.` `table.` などのLua標準ライブラリ、独自関数(`RGB()` など)、指示子で定義した変数も補完できます。
+
+### 引数の候補
+
+`obj.load("…")` `obj.setoption("…")` `obj.getoption("…")` `obj.getinfo("…")` などの文字列引数の候補を表示します。
+
+![obj.load の第1引数の候補](images/complete-arg.png)
+
+第1引数に応じて第2引数の候補が変わります。例えば `obj.setoption("blend", …)` では合成モードの候補になります。
+
+![obj.setoption("blend") の第2引数の候補](images/complete-option.png)
+
+`obj.pixelshader("…")` にはファイル内で定義したシェーダー名を、`obj.data("…")` には `--data@` の登録名を、`obj.getvalue("track.…")` にはトラックバーの変数名を候補に出します。
+
+![シェーダー名の候補](images/complete-doc.png)
+
+### 引数ヒント
+
+関数の引数を入力中に、各引数の説明を表示します。`obj.load("text", …)` のように、第1引数に応じて形式ごとの説明に切り替わります。指示子の行でも、今入力している項目の説明を表示します。
+
+![引数ヒント](images/signature.png)
+
+### ホバー
+
+関数・変数・指示子・文字列引数にマウスを乗せると説明を表示します。
+
+![obj関数のホバー](images/hover-func.png)
+
+指示子で定義した変数では、項目名・範囲・初期値・定義行を表示します。
+
+![変数のホバー](images/hover-var.png)
+
+### 定義へ移動
+
+変数から `--track@` などの定義行へ、`obj.pixelshader("brighten", …)` の `"brighten"` からシェーダーの定義へ、`"track.xxx"` からトラックバーの定義へ移動できます(F12 / Alt+F12 でその場に表示)。
+
+![定義をその場に表示](images/definition.png)
+
+### アウトライン
+
+エクスプローラーの「アウトライン」やパンくずリストに、`@スクリプト` > `--group` > 設定項目・シェーダー定義 の階層を表示します。
+
+![アウトライン](images/outline.png)
+
+### 色見本
+
+`0xRRGGBB` の横に色見本を表示します。見本にマウスを乗せるとカラーピッカーで色を編集できます。
+
+![色見本とカラーピッカー](images/color.png)
+
+### 設定グループの範囲表示
+
+`--group` で作った設定グループの範囲に、色付きの線と薄い背景を付けます。グループごとに色が変わります。
+
+設定で、開始行に「▼ グループ名 N項目」、終了行に「▲ ここまで」も表示できます(下の画像は表示をオンにした状態)。
+
+![設定グループの範囲表示](images/group.png)
+
+### @スクリプト名の強調
+
+`@スクリプト名` の行全体に背景色を付け、スクロールバーの横にも印を表示します。長いファイルでもスクリプトの区切りが一目で分かります。
+
+![@スクリプト名の強調](images/section.png)
+
+### シェーダー定義の強調
+
+`--[[pixelshader@` ～ `]]`(computeshader も同様)の範囲に背景色を付けます。
+
+![シェーダー定義の強調](images/shader.png)
+
+### --track@ の補助表示
+
+`--track@` の各値の前に `min:` `max:` `default:` `step:` などの項目名を小さく表示します。項目ごとのオン/オフと表示色を設定できます。
+
+![--track@ の補助表示](images/track.png)
+
+### 折りたたみ
+
+設定グループ・`@スクリプト`・シェーダー定義を折りたためます。インデントによる折りたたみもそのまま使えます。
+
+![折りたたみ](images/folding.png)
+
+### 診断
+
+書き間違いなどを波線と「問題」パネルで知らせます。主に次のものを検出します。
+
+- 指示子のタイプミス(`--infomation` など)
+- トラックバーの引数不足・範囲外の初期値
+- 変数名・項目名の重複
+- `--trackgroup` / `--hide` の未定義の変数
+- 未定義のシェーダー名・`--data` 名
+- `.tra2` 専用の指示子の誤用
+
+![診断](images/diagnostics.png)
+
+### 設定画面
+
+コマンドパレット(Ctrl+Shift+P)で「AviUtl2 IntelliSense: 設定」を実行すると、次の設定をまとめて変更できる画面が開きます。変更はすぐにエディタへ反映されます。
+
+- 要素ごとの文字色・太字・斜体・下線
+- `--track@` の補助表示のオン/オフと色
+- `@スクリプト名` の行・シェーダー定義の背景色と濃さ
+- 設定グループの範囲表示の色と濃さ
+
+![設定画面](images/settings.png)
 
 ### フォーク版からの主な変更点
 
@@ -39,21 +156,7 @@ AviUtl2 beta20時点で更新停止していたため、AviUtl2 **ver 2.1.10(lua
   - 関数: `obj.getfont()` `obj.multiobject()` `print()`、`obj.getvalue(effect,item)` / `obj.getvalue(layer,effect,item)`、`obj.clearbuffer(target,w,h)`、`obj.load("movie.frame" / "movie.info" / "text.layout")`、`obj.setfont()` の太文字〜行間隔、`obj.load("text")` の文字揃え、`obj.load("figure")` のアスペクト比
   - オプション: `obj.getoption()` の `group_info` `enable_group` `clipping_object` など、`obj.setoption("camera_focus")`、`"rgba_add"` `"force"` `"no_resize"`、`obj.setanchor()` の `mesh` `rgba` `offset` `screen` `small`、`obj.getinfo()` の `bpm_list` `frame_max` `layer_max`、`obj.getpoint()` の `default` `frame_s` など
 - AviUtl2のスクリプトファイルのみを対象とし、通常の `.lua` ファイルでは補完・診断が動かないようにしました。
-- ホバー表示・定義へ移動・色見本・診断を追加しました。
-
-## 導入方法
-
-1. [Releases](https://github.com/teruyoshii/AviUtl2-IntelliSense/releases/latest) から `aviutl2-intellisense-x.x.x.vsix` をダウンロードします。
-2. VSCodeの拡張機能メニュー右上の「…」→「VSIXからのインストール」でダウンロードしたファイルを選択します。
-   (コマンドの場合は `code --install-extension aviutl2-intellisense-x.x.x.vsix`)
-
-更新する場合も、新しいvsixで同じ手順を行ってください。
-
-ソースから作成する場合は、このフォルダで `npm run package` を実行すると vsix が作成されます(Node.jsが必要)。
-
-> [!IMPORTANT]
-> AviUtl2 IntelliSense Fork(または元のAviUtl2 IntelliSense)を導入している場合は、先にアンインストールしてください。
-> フォーク版はLua全体の文法を置き換えるため、併用すると色分けが崩れます。
+- ホバー表示・定義へ移動・色見本・診断などを追加しました。
 
 ## 設定
 
@@ -124,6 +227,7 @@ samples/          動作確認用のスクリプト
 test/             テスト(npm test)
 ```
 
+- vsixの作成: `npm run package`(Node.jsが必要)
 - テスト: `npm test`(Node.jsのみで実行でき、VSCode APIはモックに差し替えています)
 - 動作確認: VSCodeでこのフォルダを開き、F5(拡張機能開発ホスト)で `samples/sample.obj2` を開きます。
 

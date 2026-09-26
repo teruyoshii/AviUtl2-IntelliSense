@@ -2,3 +2,4 @@ test/**
 samples/**
 .gitignore
 *.vsix
+images/**
